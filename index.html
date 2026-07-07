@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>확장형 MPI 시뮬레이터</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; margin: 40px; background-color: #f8f9fa; color: #333; line-height: 1.6; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #34495e; padding-bottom: 10px; font-size: 28px; }
+        h2 { color: #2c3e50; margin-top: 40px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+        h3 { color: #34495e; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .upload-section { background: #fff; padding: 25px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 30px; border: 1px solid #e0e0e0; }
+        input[type="file"] { margin-top: 12px; display: block; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background-color: #34495e; color: white; font-weight: 500; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .highlight { font-weight: bold; color: #c0392b; }
+        .contribution-text { color: #27ae60; font-weight: bold; }
+        .description-section { background: #fff; padding: 25px; border-radius: 6px; border: 1px solid #e0e0e0; margin-top: 30px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>확장형 MPI 시뮬레이터</h1>
+        <p>UNDP 전통 다차원 빈곤 지수(MPI) 데이터와 AI 결핍률 데이터가 포함된 CSV 파일을 업로드하여 산출 결과를 확인하는 시뮬레이터입니다.</p>
+
+        <div class="upload-section">
+            <label style="font-weight: bold; font-size: 16px;">CSV 데이터 파일 업로드</label>
+            <input type="file" id="csvFileInput" accept=".csv">
+        </div>
+
+        <div id="resultSection" style="display:none;">
+            <h3>시뮬레이션 분석 결과</h3>
+            <table id="mpiTable">
+                <thead>
+                    <tr>
+                        <th>국가 (Country)</th>
+                        <th>전통적 MPI</th>
+                        <th>AI 결핍률</th>
+                        <th class="highlight">확장형 AI MPI</th>
+                        <th>AI 결핍 기여도</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="description-section">
+            <h2>확장형 AI MPI 산출 원리</h2>
+            
+            <h3>1. 알키어-포스터(Alkire-Foster) 알고리즘 가중치 재조정</h3>
+            <p>전통적인 글로벌 다차원 빈곤 지수(Global MPI)는 보건, 교육, 생활 수준의 3대 차원에 각각 1/3(약 33.3%)의 균등 가중치를 부여합니다. 본 연구의 확장형 모델은 현대 사회의 핵심 생존 역량인 'AI 미래 역량'을 4번째 차원으로 편입함에 따라, 알키어-포스터 방법론에 의거하여 각 차원의 가중치를 1/4(25%)로 재조정하였습니다.</p>
+            
+            <h3>2. 수학적 통합 메커니즘</h3>
+            <p>기존 3개 차원의 총합 비중이 100%에서 75%로 축소되고, 신규 추가된 AI 차원이 25%의 비중을 가집니다. 이를 수식으로 나타내면 다음과 같습니다.</p>
+            <p style="background: #f1f2f6; padding: 15px; border-left: 4px solid #34495e; font-family: monospace; font-size: 15px;">
+                확장형 AI MPI = (전통적 MPI * 0.75) + (AI 결핍률 * 0.25)
+            </p>
+
+            <h3>3. 주요 지표 설명</h3>
+            <ul>
+                <li><strong>전통적 MPI:</strong> UNDP 및 OPHId가 발표한 기존의 보건, 교육, 주거 환경 결핍 지수입니다.</li>
+                <li><strong>AI 결핍률:</strong> 국가별 디지털 기기 접근성 및 리터러시 수준을 역산하여 도출한 결핍 수치입니다. (1 - 디지털화 점수/100)</li>
+                <li><strong>확장형 AI MPI:</strong> 전통적 결핍에 미래 기술 소외 요소를 결합하여 재산출한 다차원 빈곤 지수입니다.</li>
+                <li><strong>AI 결핍 기여도:</strong> 새로 도출된 전체 빈곤 지수 중에서 AI 및 디지털 소외가 기여한 상대적 비중을 백분율로 나타낸 값입니다.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('csvFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                processData(text);
+            };
+            reader.readAsText(file, 'UTF-8');
+        });
+
+        function processData(text) {
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            if (lines.length <= 1) {
+                alert("데이터가 올바르지 않습니다.");
+                return;
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim());
+            const idxCountry = headers.indexOf('Country');
+            const idxMPITrad = headers.indexOf('MPI_Traditional');
+            const idxAIDep = headers.indexOf('AI_Deprivation');
+
+            if (idxCountry === -1 || idxMPITrad === -1 || idxAIDep === -1) {
+                alert("CSV 파일 필수 항목(Country, MPI_Traditional, AI_Deprivation)이 누락되었습니다.");
+                return;
+            }
+
+            const tbody = document.querySelector('#mpiTable tbody');
+            tbody.innerHTML = '';
+
+            for (let i = 1; i < lines.length; i++) {
+                const rowData = lines[i].split(',').map(d => d.trim());
+                if (rowData.length < headers.length) continue;
+
+                const country = rowData[idxCountry];
+                const mpiTrad = parseFloat(rowData[idxMPITrad]);
+                const aiDep = parseFloat(rowData[idxAIDep]);
+
+                const mpiExtended = (mpiTrad * 0.75) + (aiDep * 0.25);
+                const aiContribution = ((0.25 * aiDep) / mpiExtended) * 100;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${country}</strong></td>
+                    <td>${mpiTrad.toFixed(3)}</td>
+                    <td>${aiDep.toFixed(3)}</td>
+                    <td class="highlight">${mpiExtended.toFixed(3)}</td>
+                    <td class="contribution-text">${aiContribution.toFixed(1)}%</td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            document.getElementById('resultSection').style.display = 'block';
+        }
+    </script>
+
+</body>
+</html>
