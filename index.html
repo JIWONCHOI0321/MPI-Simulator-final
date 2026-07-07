@@ -14,7 +14,15 @@
         .step-section { background: #fff; padding: 25px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid #e0e0e0; }
         .instruction { background: #f1f2f6; padding: 15px; border-left: 4px solid #34495e; margin-bottom: 15px; font-size: 14px; }
         
-        .table-container { max-height: 300px; overflow-y: auto; overflow-x: auto; margin-top: 15px; border: 1px solid #ccc; }
+        /* 세로 및 가로 스크롤을 동시에 지원하도록 최적화된 구역 */
+        .table-container { 
+            max-height: 500px; /* 표의 최대 세로 높이 지정 */
+            overflow-y: auto;  /* 데이터 행이 많아지면 세로 스크롤바 자동 생성 */
+            overflow-x: auto;  /* 열이 많아지면 가로 스크롤바 자동 생성 */
+            margin-top: 15px; 
+            border: 1px solid #ccc; 
+            background: #fff;
+        }
         table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: center; white-space: nowrap; }
         th { background-color: #34495e; color: white; cursor: pointer; position: sticky; top: 0; }
@@ -149,9 +157,8 @@
             });
             thead.appendChild(trHead);
 
-            // 데이터 미리보기 (최대 15행만 출력하여 과부하 방지)
-            const displayLimit = Math.min(parsedRows.length, 15);
-            for (let i = 0; i < displayLimit; i++) {
+            // 📌 출력 제한을 해제하여 모든 데이터 행을 화면에 표시합니다.
+            for (let i = 0; i < parsedRows.length; i++) {
                 const tr = document.createElement('tr');
                 parsedRows[i].forEach(cellData => {
                     const td = document.createElement('td');
