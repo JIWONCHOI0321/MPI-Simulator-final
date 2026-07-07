@@ -8,17 +8,30 @@
         body { font-family: 'Malgun Gothic', sans-serif; margin: 40px; background-color: #f8f9fa; color: #333; line-height: 1.6; }
         h1 { color: #2c3e50; border-bottom: 2px solid #34495e; padding-bottom: 10px; font-size: 28px; }
         h2 { color: #2c3e50; margin-top: 40px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
-        h3 { color: #34495e; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .upload-section { background: #fff; padding: 25px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 30px; border: 1px solid #e0e0e0; }
-        input[type="file"] { margin-top: 12px; display: block; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background-color: #34495e; color: white; font-weight: 500; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
-        .highlight { font-weight: bold; color: #c0392b; }
-        .contribution-text { color: #27ae60; font-weight: bold; }
-        .description-section { background: #fff; padding: 25px; border-radius: 6px; border: 1px solid #e0e0e0; margin-top: 30px; }
+        h3 { color: #34495e; margin-top: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        .step-section { background: #fff; padding: 25px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid #e0e0e0; }
+        .instruction { background: #f1f2f6; padding: 15px; border-left: 4px solid #34495e; margin-bottom: 15px; font-size: 14px; }
+        
+        .table-container { max-height: 300px; overflow-y: auto; overflow-x: auto; margin-top: 15px; border: 1px solid #ccc; }
+        table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; white-space: nowrap; }
+        th { background-color: #34495e; color: white; cursor: pointer; position: sticky; top: 0; }
+        th:hover { background-color: #2c3e50; }
+        
+        /* 열 선택 시 시각적 효과 */
+        th.selected-country, td.selected-country { background-color: #dff9fb !important; color: #2c3e50; font-weight: bold; }
+        th.selected-mpi, td.selected-mpi { background-color: #ffeaa7 !important; color: #2c3e50; font-weight: bold; }
+        th.selected-ai, td.selected-ai { background-color: #fab1a0 !important; color: #2c3e50; font-weight: bold; }
+        
+        .btn { background-color: #34495e; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; margin-top: 10px; }
+        .btn:hover { background-color: #2c3e50; }
+        
+        input[type="text"] { padding: 10px; width: 250px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        
+        .result-box { background: #fff; padding: 20px; border: 2px solid #c0392b; border-radius: 6px; margin-top: 20px; font-size: 16px; }
+        .description-section { background: #fff; padding: 25px; border-radius: 6px; border: 1px solid #e0e0e0; margin-top: 40px; }
         ul { padding-left: 20px; }
         li { margin-bottom: 10px; }
     </style>
@@ -27,110 +40,225 @@
 
     <div class="container">
         <h1>확장형 MPI 시뮬레이터</h1>
-        <p>UNDP 전통 다차원 빈곤 지수(MPI) 데이터와 AI 결핍률 데이터가 포함된 CSV 파일을 업로드하여 산출 결과를 확인하는 시뮬레이터입니다.</p>
+        <p>원본 통계 데이터를 업로드한 후, 마우스 클릭으로 열을 지정하여 확장형 AI MPI를 산출하는 사용자 맞춤형 시뮬레이터입니다.</p>
 
-        <div class="upload-section">
-            <label style="font-weight: bold; font-size: 16px;">CSV 데이터 파일 업로드</label>
+        <div class="step-section">
+            <h3>1단계: CSV 파일 업로드</h3>
+            <p>소장하고 계신 UNDP 데이터나 직접 수집한 원본 CSV 파일을 선택하세요.</p>
             <input type="file" id="csvFileInput" accept=".csv">
         </div>
 
-        <div id="resultSection" style="display:none;">
-            <h3>시뮬레이션 분석 결과</h3>
-            <table id="mpiTable">
-                <thead>
-                    <tr>
-                        <th>국가 (Country)</th>
-                        <th>전통적 MPI</th>
-                        <th>AI 결핍률</th>
-                        <th class="highlight">확장형 AI MPI</th>
-                        <th>AI 결핍 기여도</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    </tbody>
-            </table>
+        <div id="step2Section" class="step-section" style="display:none;">
+            <h3>2단계: 데이터 매핑 및 열 지정</h3>
+            <div class="instruction">
+                아래 표의 <strong>맨 위 제목 칸(헤더)을 클릭</strong>하여 데이터의 종류를 지정해 주세요.<br>
+                순서대로 1번째 클릭은 <strong>[국가명]</strong>, 2번째 클릭은 <strong>[전통 MPI 값]</strong>, 3번째 클릭은 <strong>[AI 결핍률]</strong>로 지정됩니다.
+            </div>
+            <div style="margin-bottom: 10px; font-size: 14px;">
+                <span id="statusCountry" style="margin-right: 15px; color: #2980b9;">국가명 열: 지정되지 않음</span>
+                <span id="statusMpi" style="margin-right: 15px; color: #f39c12;">전통 MPI 열: 지정되지 않음</span>
+                <span id="statusAi" style="color: #d35400;">AI 결핍률 열: 지정되지 않음</span>
+            </div>
+            <button class="btn" id="resetMappingBtn">열 지정 초기화</button>
+
+            <div class="table-container">
+                <table id="previewTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="step3Section" class="step-section" style="display:none;">
+            <h3>3단계: 분석 대상국 검색 및 시뮬레이션 결과</h3>
+            <p>분석하고자 하는 국가의 이름을 영문으로 입력한 뒤 산출 버튼을 누르세요.</p>
+            <input type="text" id="targetCountryInput" placeholder="예: Bangladesh 또는 Mexico">
+            <button class="btn" id="calculateBtn">시뮬레이션 산출</button>
+
+            <div id="finalResult" class="result-box" style="display:none;">
+                </div>
         </div>
 
         <div class="description-section">
             <h2>확장형 AI MPI 산출 원리</h2>
-            
-            <h3>1. 알키어-포스터(Alkire-Foster) 알고리즘 가중치 재조정</h3>
-            <p>전통적인 글로벌 다차원 빈곤 지수(Global MPI)는 보건, 교육, 생활 수준의 3대 차원에 각각 1/3(약 33.3%)의 균등 가중치를 부여합니다. 본 연구의 확장형 모델은 현대 사회의 핵심 생존 역량인 'AI 미래 역량'을 4번째 차원으로 편입함에 따라, 알키어-포스터 방법론에 의거하여 각 차원의 가중치를 1/4(25%)로 재조정하였습니다.</p>
-            
-            <h3>2. 수학적 통합 메커니즘</h3>
-            <p>기존 3개 차원의 총합 비중이 100%에서 75%로 축소되고, 신규 추가된 AI 차원이 25%의 비중을 가집니다. 이를 수식으로 나타내면 다음과 같습니다.</p>
+            <h3>1. 알키어-포스터(Alkire-Foster) 가중치 법칙</h3>
+            <p>기존 글로벌 다차원 빈곤 지수(MPI)의 3대 차원(보건, 교육, 생활수준) 가중치 합산인 100%를 확장하여, 신규 차원인 'AI 미래 역량'에 25%의 독립 가중치를 부여합니다. 이에 따라 기존 3개 차원의 총 가중치는 75%로 비례 재조정됩니다.</p>
+            <h3>2. 수학적 계산 구조</h3>
             <p style="background: #f1f2f6; padding: 15px; border-left: 4px solid #34495e; font-family: monospace; font-size: 15px;">
-                확장형 AI MPI = (전통적 MPI * 0.75) + (AI 결핍률 * 0.25)
+                확장형 AI MPI = (기존 전통적 MPI * 0.75) + (사용자 지정 AI 결핍률 * 0.25)
             </p>
-
-            <h3>3. 주요 지표 설명</h3>
-            <ul>
-                <li><strong>전통적 MPI:</strong> UNDP 및 OPHId가 발표한 기존의 보건, 교육, 주거 환경 결핍 지수입니다.</li>
-                <li><strong>AI 결핍률:</strong> 국가별 디지털 기기 접근성 및 리터러시 수준을 역산하여 도출한 결핍 수치입니다. (1 - 디지털화 점수/100)</li>
-                <li><strong>확장형 AI MPI:</strong> 전통적 결핍에 미래 기술 소외 요소를 결합하여 재산출한 다차원 빈곤 지수입니다.</li>
-                <li><strong>AI 결핍 기여도:</strong> 새로 도출된 전체 빈곤 지수 중에서 AI 및 디지털 소외가 기여한 상대적 비중을 백분율로 나타낸 값입니다.</li>
-            </ul>
         </div>
     </div>
 
     <script>
+        let parsedHeaders = [];
+        let parsedRows = [];
+        
+        let colIdxCountry = -1;
+        let colIdxMpi = -1;
+        let colIdxAi = -1;
+        let selectionStep = 0; // 0: 국가명 선택대기, 1: MPI 선택대기, 2: AI 선택대기, 3: 선택완료
+
         document.getElementById('csvFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                const text = e.target.result;
-                processData(text);
+                parseCSV(e.target.result);
             };
             reader.readAsText(file, 'UTF-8');
         });
 
-        function processData(text) {
+        function parseCSV(text) {
             const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
             if (lines.length <= 1) {
-                alert("데이터가 올바르지 않습니다.");
+                alert("데이터가 불충분합니다.");
                 return;
             }
 
-            const headers = lines[0].split(',').map(h => h.trim());
-            const idxCountry = headers.indexOf('Country');
-            const idxMPITrad = headers.indexOf('MPI_Traditional');
-            const idxAIDep = headers.indexOf('AI_Deprivation');
-
-            if (idxCountry === -1 || idxMPITrad === -1 || idxAIDep === -1) {
-                alert("CSV 파일 필수 항목(Country, MPI_Traditional, AI_Deprivation)이 누락되었습니다.");
-                return;
-            }
-
-            const tbody = document.querySelector('#mpiTable tbody');
-            tbody.innerHTML = '';
+            parsedHeaders = lines[0].split(',').map(h => h.trim());
+            parsedRows = [];
 
             for (let i = 1; i < lines.length; i++) {
                 const rowData = lines[i].split(',').map(d => d.trim());
-                if (rowData.length < headers.length) continue;
-
-                const country = rowData[idxCountry];
-                const mpiTrad = parseFloat(rowData[idxMPITrad]);
-                const aiDep = parseFloat(rowData[idxAIDep]);
-
-                const mpiExtended = (mpiTrad * 0.75) + (aiDep * 0.25);
-                const aiContribution = ((0.25 * aiDep) / mpiExtended) * 100;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${country}</strong></td>
-                    <td>${mpiTrad.toFixed(3)}</td>
-                    <td>${aiDep.toFixed(3)}</td>
-                    <td class="highlight">${mpiExtended.toFixed(3)}</td>
-                    <td class="contribution-text">${aiContribution.toFixed(1)}%</td>
-                `;
-                tbody.appendChild(tr);
+                if (rowData.length === parsedHeaders.length) {
+                    parsedRows.push(rowData);
+                }
             }
 
-            document.getElementById('resultSection').style.display = 'block';
+            renderPreviewTable();
+            resetMapping();
+            document.getElementById('step2Section').style.display = 'block';
         }
-    </script>
 
+        function renderPreviewTable() {
+            const thead = document.querySelector('#previewTable thead');
+            const tbody = document.querySelector('#previewTable tbody');
+            
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            // 헤더 생성
+            const trHead = document.createElement('tr');
+            parsedHeaders.forEach((header, index) => {
+                const th = document.createElement('th');
+                th.innerText = header;
+                th.addEventListener('click', () => handleHeaderClick(index));
+                trHead.appendChild(th);
+            });
+            thead.appendChild(trHead);
+
+            // 데이터 미리보기 (최대 15행만 출력하여 과부하 방지)
+            const displayLimit = Math.min(parsedRows.length, 15);
+            for (let i = 0; i < displayLimit; i++) {
+                const tr = document.createElement('tr');
+                parsedRows[i].forEach(cellData => {
+                    const td = document.createElement('td');
+                    td.innerText = cellData;
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            }
+        }
+
+        function handleHeaderClick(colIndex) {
+            if (selectionStep === 0) {
+                colIdxCountry = colIndex;
+                document.getElementById('statusCountry').innerText = `국가명 열: [${parsedHeaders[colIndex]}] 지정됨`;
+                highlightColumn(colIndex, 'selected-country');
+                selectionStep = 1;
+            } else if (selectionStep === 1) {
+                if (colIndex === colIdxCountry) return;
+                colIdxMpi = colIndex;
+                document.getElementById('statusMpi').innerText = `전통 MPI 열: [${parsedHeaders[colIndex]}] 지정됨`;
+                highlightColumn(colIndex, 'selected-mpi');
+                selectionStep = 2;
+            } else if (selectionStep === 2) {
+                if (colIndex === colIdxCountry || colIndex === colIdxMpi) return;
+                colIdxAi = colIndex;
+                document.getElementById('statusAi').innerText = `AI 결핍률 열: [${parsedHeaders[colIndex]}] 지정됨`;
+                highlightColumn(colIndex, 'selected-ai');
+                selectionStep = 3;
+                document.getElementById('step3Section').style.display = 'block';
+            }
+        }
+
+        function highlightColumn(colIndex, className) {
+            const table = document.getElementById('previewTable');
+            table.querySelectorAll(`tr`).forEach(tr => {
+                const cell = tr.children[colIndex];
+                if (cell) cell.classList.add(className);
+            });
+        }
+
+        function resetMapping() {
+            colIdxCountry = -1;
+            colIdxMpi = -1;
+            colIdxAi = -1;
+            selectionStep = 0;
+            document.getElementById('statusCountry').innerText = "국가명 열: 지정되지 않음";
+            document.getElementById('statusMpi').innerText = "전통 MPI 열: 지정되지 않음";
+            document.getElementById('statusAi').innerText = "AI 결핍률 열: 지정되지 않음";
+            document.getElementById('step3Section').style.display = 'none';
+            document.getElementById('finalResult').style.display = 'none';
+            
+            const table = document.getElementById('previewTable');
+            table.querySelectorAll('th, td').forEach(cell => {
+                cell.className = '';
+            });
+        }
+
+        document.getElementById('resetMappingBtn').addEventListener('click', resetMapping);
+
+        document.getElementById('calculateBtn').addEventListener('click', function() {
+            const targetInput = document.getElementById('targetCountryInput').value.trim().toLowerCase();
+            if (!targetInput) {
+                alert("국가 이름을 입력해 주세요.");
+                return;
+            }
+
+            let foundRow = null;
+            for (let i = 0; i < parsedRows.length; i++) {
+                if (parsedRows[i][colIdxCountry].toLowerCase() === targetInput) {
+                    foundRow = parsedRows[i];
+                    break;
+                }
+            }
+
+            const resultBox = document.getElementById('finalResult');
+            if (!foundRow) {
+                resultBox.style.display = 'block';
+                resultBox.innerHTML = `<span style="color: #c0392b; font-weight: bold;">데이터 오류:</span> 입력하신 국가명 [${document.getElementById('targetCountryInput').value}]을 데이터 세트 내에서 찾을 수 없습니다. 철자를 다시 확인해 주세요.`;
+                return;
+            }
+
+            const countryName = foundRow[colIdxCountry];
+            const mpiTraditional = parseFloat(foundRow[colIdxMpi]);
+            const aiDeprivation = parseFloat(foundRow[colIdxAi]);
+
+            if (isNaN(mpiTraditional) || AlbIsEmpty(foundRow[colIdxMpi]) || isNaN(aiDeprivation) || AlbIsEmpty(foundRow[colIdxAi])) {
+                resultBox.style.display = 'block';
+                resultBox.innerHTML = `<span style="color: #c0392b; font-weight: bold;">데이터 오류:</span> 해당 국가의 통계 수치가 누락되었거나 숫자가 아닙니다.`;
+                return;
+            }
+
+            // 알고리즘 메커니즘 연산 실행
+            const mpiExtended = (mpiTraditional * 0.75) + (aiDeprivation * 0.25);
+            const aiContribution = ((0.25 * aiDeprivation) / mpiExtended) * 100;
+
+            resultBox.style.display = 'block';
+            resultBox.innerHTML = `
+                <strong>시뮬레이션 결과 리포트 (${countryName})</strong><br>
+                <hr style="border: 0; border-top: 1px solid #ddd; margin: 10px 0;">
+                • 전통적 다차원 빈곤 지수 (MPI Traditional) : ${mpiTraditional.toFixed(3)}<br>
+                • 사용자 지정 AI 결핍률 (AI Deprivation Rate) : ${aiDeprivation.toFixed(3)}<br>
+                • <strong>확장형 AI 다차원 빈곤 지수 (MPI Extended) : ${mpiExtended.toFixed(3)}</strong><br>
+                • 전체 다차원 빈곤 중 AI 소외의 상대적 기여도 : ${aiContribution.toFixed(1)}%
+            `;
+        });
+
+        function AlbIsEmpty(str) { return (!str || str.length === 0); }
+    </script>
 </body>
 </html>
