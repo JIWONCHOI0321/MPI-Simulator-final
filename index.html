@@ -23,7 +23,12 @@
             border: 1px solid #ccc; 
             background: #fff;
         }
-        table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; }
+        table { 
+            width: max-content; /* 표가 화면 크기에 맞춰 구겨지지 않고 원본 크기를 유지하도록 설정 */
+            min-width: 100%;
+            border-collapse: collapse; 
+            font-size: 13px; 
+        }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: center; white-space: nowrap; }
         th { background-color: #34495e; color: white; cursor: pointer; position: sticky; top: 0; }
         th:hover { background-color: #2c3e50; }
@@ -105,7 +110,7 @@
         let colIdxCountry = -1;
         let colIdxMpi = -1;
         let colIdxAi = -1;
-        let selectionStep = 0; // 0: 국가명 선택대기, 1: MPI 선택대기, 2: AI 선택대기, 3: 선택완료
+        let selectionStep = 0; // 0: 국가명, 1: MPI, 2: AI, 3: 완료
 
         document.getElementById('csvFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -113,27 +118,58 @@
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                parseCSV(e.target.result);
+                parseAdvancedCSV(e.target.result);
             };
             reader.readAsText(file, 'UTF-8');
         });
 
-        function parseCSV(text) {
-            const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-            if (lines.length <= 1) {
-                alert("데이터가 불충분합니다.");
+        // 셀 내 줄바꿈 및 따옴표(,)를 완벽하게 처리하는 표준 CSV 고급 파서
+        function parseAdvancedCSV(text) {
+            let arr = [];
+            let row = [];
+            let c = '';
+            let insideQuote = false;
+
+            for (let i = 0; i < text.length; i++) {
+                let char = text[i];
+                let nextChar = text[i+1];
+
+                if (char === '"') {
+                    if (insideQuote && nextChar === '"') { 
+                        c += '"';
+                        i++;
+                    } else {
+                        insideQuote = !insideQuote; 
+                    }
+                } else if (char === ',' && !insideQuote) {
+                    row.push(c.trim());
+                    c = '';
+                } else if ((char === '\r' || char === '\n') && !insideQuote) {
+                    if (char === '\r' && nextChar === '\n') {
+                        i++;
+                    }
+                    row.push(c.trim());
+                    if (row.length > 0 && row.some(cell => cell.length > 0)) {
+                        arr.push(row);
+                    }
+                    row = [];
+                    c = '';
+                } else {
+                    c += char;
+                }
+            }
+            if (c.length > 0 || row.length > 0) {
+                row.push(c.trim());
+                arr.push(row);
+            }
+
+            if (arr.length <= 1) {
+                alert("데이터가 불충분하거나 올바르지 않은 CSV 파일입니다.");
                 return;
             }
 
-            parsedHeaders = lines[0].split(',').map(h => h.trim());
-            parsedRows = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                const rowData = lines[i].split(',').map(d => d.trim());
-                if (rowData.length === parsedHeaders.length) {
-                    parsedRows.push(rowData);
-                }
-            }
+            parsedHeaders = arr[0];
+            parsedRows = arr.slice(1);
 
             renderPreviewTable();
             resetMapping();
@@ -147,24 +183,26 @@
             thead.innerHTML = '';
             tbody.innerHTML = '';
 
-            // 헤더 생성
+            // 헤더 행 생성
             const trHead = document.createElement('tr');
             parsedHeaders.forEach((header, index) => {
                 const th = document.createElement('th');
-                th.innerText = header;
+                th.innerHTML = header.replace(/\n/g, '<br>'); 
                 th.addEventListener('click', () => handleHeaderClick(index));
                 trHead.appendChild(th);
             });
             thead.appendChild(trHead);
 
-            // 📌 출력 제한을 해제하여 모든 데이터 행을 화면에 표시합니다.
+            // 출력 제한을 해제하여 모든 데이터 행을 화면에 표시합니다.
             for (let i = 0; i < parsedRows.length; i++) {
                 const tr = document.createElement('tr');
-                parsedRows[i].forEach(cellData => {
+                
+                for (let j = 0; j < parsedHeaders.length; j++) {
                     const td = document.createElement('td');
-                    td.innerText = cellData;
+                    let cellValue = parsedRows[i][j] || '';
+                    td.innerHTML = cellValue.replace(/\n/g, '<br>');
                     tr.appendChild(td);
-                });
+                }
                 tbody.appendChild(tr);
             }
         }
@@ -172,19 +210,19 @@
         function handleHeaderClick(colIndex) {
             if (selectionStep === 0) {
                 colIdxCountry = colIndex;
-                document.getElementById('statusCountry').innerText = `국가명 열: [${parsedHeaders[colIndex]}] 지정됨`;
+                document.getElementById('statusCountry').innerText = `국가명 열: [${parsedHeaders[colIndex].replace(/\n/g, ' ')}] 지정됨`;
                 highlightColumn(colIndex, 'selected-country');
                 selectionStep = 1;
             } else if (selectionStep === 1) {
                 if (colIndex === colIdxCountry) return;
                 colIdxMpi = colIndex;
-                document.getElementById('statusMpi').innerText = `전통 MPI 열: [${parsedHeaders[colIndex]}] 지정됨`;
+                document.getElementById('statusMpi').innerText = `전통 MPI 열: [${parsedHeaders[colIndex].replace(/\n/g, ' ')}] 지정됨`;
                 highlightColumn(colIndex, 'selected-mpi');
                 selectionStep = 2;
             } else if (selectionStep === 2) {
                 if (colIndex === colIdxCountry || colIndex === colIdxMpi) return;
                 colIdxAi = colIndex;
-                document.getElementById('statusAi').innerText = `AI 결핍률 열: [${parsedHeaders[colIndex]}] 지정됨`;
+                document.getElementById('statusAi').innerText = `AI 결핍률 열: [${parsedHeaders[colIndex].replace(/\n/g, ' ')}] 지정됨`;
                 highlightColumn(colIndex, 'selected-ai');
                 selectionStep = 3;
                 document.getElementById('step3Section').style.display = 'block';
@@ -227,7 +265,7 @@
 
             let foundRow = null;
             for (let i = 0; i < parsedRows.length; i++) {
-                if (parsedRows[i][colIdxCountry].toLowerCase() === targetInput) {
+                if (parsedRows[i][colIdxCountry] && parsedRows[i][colIdxCountry].toLowerCase().includes(targetInput)) {
                     foundRow = parsedRows[i];
                     break;
                 }
@@ -236,27 +274,28 @@
             const resultBox = document.getElementById('finalResult');
             if (!foundRow) {
                 resultBox.style.display = 'block';
-                resultBox.innerHTML = `<span style="color: #c0392b; font-weight: bold;">데이터 오류:</span> 입력하신 국가명 [${document.getElementById('targetCountryInput').value}]을 데이터 세트 내에서 찾을 수 없습니다. 철자를 다시 확인해 주세요.`;
+                resultBox.innerHTML = `<span style="color: #c0392b; font-weight: bold;">데이터 오류:</span> 입력하신 국가명 [${document.getElementById('targetCountryInput').value}]을 데이터 세트 내에서 찾을 수 없습니다.`;
                 return;
             }
 
-            const countryName = foundRow[colIdxCountry];
-            const mpiTraditional = parseFloat(foundRow[colIdxMpi]);
-            const aiDeprivation = parseFloat(foundRow[colIdxAi]);
+            let rawMpi = foundRow[colIdxMpi] ? foundRow[colIdxMpi].replace(/,/g, '') : '';
+            let rawAi = foundRow[colIdxAi] ? foundRow[colIdxAi].replace(/,/g, '') : '';
 
-            if (isNaN(mpiTraditional) || AlbIsEmpty(foundRow[colIdxMpi]) || isNaN(aiDeprivation) || AlbIsEmpty(foundRow[colIdxAi])) {
+            const mpiTraditional = parseFloat(rawMpi);
+            const aiDeprivation = parseFloat(rawAi);
+
+            if (isNaN(mpiTraditional) || insideIsEmpty(rawMpi) || isNaN(aiDeprivation) || insideIsEmpty(rawAi)) {
                 resultBox.style.display = 'block';
-                resultBox.innerHTML = `<span style="color: #c0392b; font-weight: bold;">데이터 오류:</span> 해당 국가의 통계 수치가 누락되었거나 숫자가 아닙니다.`;
+                resultBox.innerHTML = `<span style="color: #c0392b; font-weight: bold;">데이터 오류:</span> 해당 국가(${foundRow[colIdxCountry]})의 통계 수치가 누락되었거나 숫자가 아닙니다. (현재 값 - 전통 MPI: ${foundRow[colIdxMpi] || '없음'}, AI결핍률: ${foundRow[colIdxAi] || '없음'})`;
                 return;
             }
 
-            // 알고리즘 메커니즘 연산 실행
             const mpiExtended = (mpiTraditional * 0.75) + (aiDeprivation * 0.25);
             const aiContribution = ((0.25 * aiDeprivation) / mpiExtended) * 100;
 
             resultBox.style.display = 'block';
             resultBox.innerHTML = `
-                <strong>시뮬레이션 결과 리포트 (${countryName})</strong><br>
+                <strong>시뮬레이션 결과 리포트 (${foundRow[colIdxCountry]})</strong><br>
                 <hr style="border: 0; border-top: 1px solid #ddd; margin: 10px 0;">
                 • 전통적 다차원 빈곤 지수 (MPI Traditional) : ${mpiTraditional.toFixed(3)}<br>
                 • 사용자 지정 AI 결핍률 (AI Deprivation Rate) : ${aiDeprivation.toFixed(3)}<br>
@@ -265,7 +304,7 @@
             `;
         });
 
-        function AlbIsEmpty(str) { return (!str || str.length === 0); }
+        function insideIsEmpty(str) { return (!str || str.length === 0); }
     </script>
 </body>
 </html>
